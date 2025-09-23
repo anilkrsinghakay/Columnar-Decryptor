@@ -1,42 +1,45 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Columnar Transposition Decrypter</title>
-  <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-    label { display:block; margin-top:1rem; font-weight:600; }
-    input[type=text] { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-size:1rem; }
-    button { margin-top:1rem; padding:10px 16px; border:none; border-radius:6px; background:#2563eb; color:white; font-size:1rem; cursor:pointer; }
-    button:hover { background:#1e40af; }
-    .output { margin-top:1rem; padding:12px; border-radius:6px; background:#f9fafb; border:1px solid #ddd; }
-    .cipherbox { background:#f3f4f6; padding:8px; border-radius:6px; font-family:monospace; word-break:break-all; }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Columnar Transposition Decrypter</h1>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white shadow-lg rounded-2xl p-8 max-w-lg w-full">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+      🔐 Columnar Transposition Decrypter
+    </h1>
 
-  <label>Ciphertext (from URL)</label>
-  <div id="cipherDisplay" class="cipherbox"></div>
+    <div>
+      <label class="block text-sm font-medium text-gray-600 mb-1">Ciphertext (from URL)</label>
+      <div id="cipherDisplay" class="bg-gray-50 border border-gray-300 rounded-lg p-3 font-mono text-sm text-gray-700 break-words">
+        (none)
+      </div>
+    </div>
 
-  <label for="key">Enter Key</label>
-  <input id="key" type="text" placeholder="e.g. SECRET" />
+    <div class="mt-6">
+      <label for="key" class="block text-sm font-medium text-gray-600 mb-1">Enter Key</label>
+      <input id="key" type="text" placeholder="e.g. SECRET"
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800" />
+    </div>
 
-  <button id="decryptBtn">Decrypt</button>
+    <button id="decryptBtn"
+            class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg shadow-md transition">
+      Decrypt
+    </button>
 
-  <div id="result" class="output" style="display:none;">
-    <strong>Plaintext:</strong>
-    <div id="plaintext"></div>
+    <div id="result" class="hidden mt-6 bg-gray-50 border border-gray-300 rounded-lg p-4">
+      <h2 class="text-lg font-semibold text-gray-800 mb-2">Plaintext</h2>
+      <div id="plaintext" class="font-mono text-gray-700 break-words"></div>
+    </div>
   </div>
 
   <script>
     // Extract ?c= from URL
     const params = new URLSearchParams(window.location.search);
     const cipherText = params.get("c") || "";
-
     document.getElementById("cipherDisplay").textContent = cipherText || "(none)";
 
     function getKeyOrder(key) {
@@ -48,10 +51,8 @@
       const cols = key.length;
       const total = cipher.length;
       const rows = Math.ceil(total / cols);
-
       const order = getKeyOrder(key);
 
-      // Each column has exactly 'rows' characters (encryption padded with #)
       const colsArr = Array(cols).fill(null).map(() => []);
       let pos = 0;
       for (let s = 0; s < order.length; s++) {
@@ -61,7 +62,6 @@
         pos += rows;
       }
 
-      // Rebuild grid row-wise
       const plainChars = [];
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -69,7 +69,6 @@
         }
       }
 
-      // Strip all padding
       return plainChars.filter(ch => ch !== padChar).join('');
     }
 
@@ -83,11 +82,10 @@
         alert("No ciphertext found in URL (?c=).");
         return;
       }
-
       try {
         const plain = decryptColumnar(cipherText, key, "#");
         document.getElementById("plaintext").textContent = plain;
-        document.getElementById("result").style.display = "block";
+        document.getElementById("result").classList.remove("hidden");
       } catch (err) {
         alert("Error during decryption: " + err.message);
       }
