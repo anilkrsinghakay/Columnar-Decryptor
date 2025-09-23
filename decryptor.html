@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Columnar Transposition Decrypter</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    label { display:block; margin-top:1rem; font-weight:600; }
+    input[type=text] { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-size:1rem; }
+    button { margin-top:1rem; padding:10px 16px; border:none; border-radius:6px; background:#2563eb; color:white; font-size:1rem; cursor:pointer; }
+    button:hover { background:#1e40af; }
+    .output { margin-top:1rem; padding:12px; border-radius:6px; background:#f9fafb; border:1px solid #ddd; }
+    .cipherbox { background:#f3f4f6; padding:8px; border-radius:6px; font-family:monospace; word-break:break-all; }
+  </style>
+</head>
+<body>
+  <h1>Columnar Transposition Decrypter</h1>
+
+  <label>Ciphertext (from URL)</label>
+  <div id="cipherDisplay" class="cipherbox"></div>
+
+  <label for="key">Enter Key</label>
+  <input id="key" type="text" placeholder="e.g. SECRET" />
+
+  <button id="decryptBtn">Decrypt</button>
+
+  <div id="result" class="output" style="display:none;">
+    <strong>Plaintext:</strong>
+    <div id="plaintext"></div>
+  </div>
+
+  <script>
+    // Extract ?c= from URL
+    const params = new URLSearchParams(window.location.search);
+    const cipherText = params.get("c") || "";
+
+    document.getElementById("cipherDisplay").textContent = cipherText || "(none)";
+
+    function getKeyOrder(key) {
+      return key.split('').map((ch, i) => ({ch, idx: i}))
+                .sort((a,b) => (a.ch < b.ch ? -1 : a.ch > b.ch ? 1 : a.idx - b.idx));
+    }
+
+    function decryptColumnar(cipher, key, padChar = "#") {
+      const cols = key.length;
+      const total = cipher.length;
+      const rows = Math.ceil(total / cols);
+
+      const order = getKeyOrder(key);
+
+      // Each column has exactly 'rows' characters (encryption padded with #)
+      const colsArr = Array(cols).fill(null).map(() => []);
+      let pos = 0;
+      for (let s = 0; s < order.length; s++) {
+        const colIdx = order[s].idx;
+        const slice = cipher.slice(pos, pos + rows);
+        colsArr[colIdx] = slice.split('');
+        pos += rows;
+      }
+
+      // Rebuild grid row-wise
+      const plainChars = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          plainChars.push(colsArr[c][r] || padChar);
+        }
+      }
+
+      // Strip all padding
+      return plainChars.filter(ch => ch !== padChar).join('');
+    }
+
+    document.getElementById("decryptBtn").addEventListener("click", () => {
+      const key = document.getElementById("key").value.trim().toUpperCase();
+      if (!key) {
+        alert("Please enter a key.");
+        return;
+      }
+      if (!cipherText) {
+        alert("No ciphertext found in URL (?c=).");
+        return;
+      }
+
+      try {
+        const plain = decryptColumnar(cipherText, key, "#");
+        document.getElementById("plaintext").textContent = plain;
+        document.getElementById("result").style.display = "block";
+      } catch (err) {
+        alert("Error during decryption: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
